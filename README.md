@@ -53,8 +53,10 @@ These are the initial parameters and example data points:
 This project is licensed under the [Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)](https://creativecommons.org/licenses/by-nc/4.0/).
 
 > You are free to use, copy, and modify the code for **non-commercial purposes**.  
+
 > Please give credit to the original author. No commercial or resale use is allowed.
 
+> **Feel free to clone the repo and try it on your own watchlist. Contributions, ideas, or improvements are always welcome!**
 ---
 
-Feel free to clone the repo and try it on your own watchlist. Contributions, ideas, or improvements are always welcome!
+
