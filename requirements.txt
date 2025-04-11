@@ -1,6 +1,12 @@
 pandas
-gspread
-oauth2client
-finnhub-python
-python-dotenv  
-yfinance 
+python-dotenv
+yfinance
+
+pandas-profiling
+pydantic-settings==1.10.7
+
+# gspread==5.7.1
+# google-auth==2.6.0
+# google-auth-oauthlib==0.4.6
+
+# finnhub-python==1.2.2  # Commented out as it's causing issues
