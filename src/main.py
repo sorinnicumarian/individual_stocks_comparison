@@ -1,58 +1,63 @@
 import os
-import pickle
-import google.auth
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
-from google.auth.transport.requests import Request
+import pandas as pd
+import finnhub
+from dotenv import load_dotenv
 
-# If modifying this file, delete the token.pickle file.
-SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']  # Use read-write scope if needed
+# Load environment variables
+load_dotenv()
 
-def authenticate():
-    creds = None
-    # The file token.pickle stores the user's access and refresh tokens, and is created automatically
-    # when the authorization flow completes for the first time.
-    if os.path.exists('token.pickle'):
-        with open('token.pickle', 'rb') as token:
-            creds = pickle.load(token)
+# Initialize Finnhub client
+finnhub_client = finnhub.Client(api_key=os.getenv('FINNHUB_API_KEY'))
 
-    # If there are no (valid) credentials available, let the user log in.
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            # Use the environment variable to dynamically get the Codespace name
-            codespace_url = os.getenv("CODESPACE_NAME", "localhost")
-            redirect_uri = f"https://{codespace_url}.github.dev/oauth2/callback"
-            
-            flow = InstalledAppFlow.from_client_secrets_file(
-                'google_client_secret.json', SCOPES, redirect_uri=redirect_uri)
-            creds = flow.run_local_server(port=0)
+# Define the list of company symbols (you can add more if needed)
+companies = [
+    {'name': 'Apple', 'symbol': 'AAPL'},
+    {'name': 'Equifax', 'symbol': 'EFX'},
+    {'name': 'Alphabet', 'symbol': 'GOOGL'},
+    {'name': 'Nvidia', 'symbol': 'NVDA'},
+    {'name': 'Procter & Gamble', 'symbol': 'PG'},
+    {'name': 'Tesla', 'symbol': 'TSLA'},
+    {'name': 'Microsoft', 'symbol': 'MSFT'},
+    {'name': 'Oracle', 'symbol': 'ORCL'}
+]
 
-        # Save the credentials for the next run
-        with open('token.pickle', 'wb') as token:
-            pickle.dump(creds, token)
+# Function to fetch data for each company
+def get_stock_data(symbol):
+    try:
+        # Get quote data (current price, market cap, PE ratio, etc.)
+        quote = finnhub_client.quote(symbol)
+        
+        # Get company profile (for company name and other details)
+        profile = finnhub_client.company_profile2(symbol=symbol)
 
-    return creds
+        # Get company basic financials (e.g., income statement)
+        financials = finnhub_client.company_basic_financials(symbol=symbol, metric='income_statement')
 
-def read_google_sheet(spreadsheet_id, range_name):
-    creds = authenticate()
-    service = build('sheets', 'v4', credentials=creds)
+        # Extract relevant data
+        data = {
+            'Company Name': profile.get('name', 'N/A'),
+            'Symbol': symbol,
+            'Current Price': quote.get('c', 'N/A'),
+            'Market Cap (Intraday)': quote.get('m', 'N/A'),
+            'PE Ratio (TTM)': financials.get('pe', 'N/A'),  # Example for PE ratio
+            'P/B Ratio': financials.get('pb', 'N/A'),  # P/B ratio might be available here
+            'ROE': financials.get('roe', 'N/A'),  # ROE (Return on Equity)
+            'Dividend Yield': financials.get('dividend_yield', 'N/A')  # Dividend yield
+        }
+        return data
+    except Exception as e:
+        print(f"Error fetching data for {symbol}: {e}")
+        return None
 
-    # Call the Sheets API
-    sheet = service.spreadsheets()
-    result = sheet.values().get(spreadsheetId=spreadsheet_id, range=range_name).execute()
-    values = result.get('values', [])
+# Fetch data for all companies
+company_data = []
+for company in companies:
+    data = get_stock_data(company['symbol'])
+    if data:
+        company_data.append(data)
 
-    return values
+# Convert the data into a pandas DataFrame
+df = pd.DataFrame(company_data)
 
-if __name__ == '__main__':
-    # Replace with your actual spreadsheet ID and range
-    spreadsheet_id = 'your-spreadsheet-id'
-    range_name = 'Sheet1!A1:D10'  # Adjust the range according to your sheet
-    values = read_google_sheet(spreadsheet_id, range_name)
-    if not values:
-        print('No data found.')
-    else:
-        for row in values:
-            print(row)
+# Display the data
+print(df)

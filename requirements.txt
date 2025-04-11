@@ -1,3 +1,5 @@
 pandas
 gspread
 oauth2client
+finnhub-python
+python-dotenv
